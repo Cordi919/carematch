@@ -1,0 +1,132 @@
+[
+  {
+    "clinic_id": "C001",
+    "name": "Harbor Light Counseling",
+    "languages": [
+      "Mandarin",
+      "English"
+    ],
+    "insurances": [
+      "Aetna",
+      "Cigna",
+      "Self-pay"
+    ],
+    "mode": [
+      "online",
+      "in_person"
+    ],
+    "city": "New York",
+    "open_slots": [
+      "Fri Oct 30 6:00 PM",
+      "Sat Oct 31 7:00 PM",
+      "Tue Nov 3 6:30 PM"
+    ],
+    "service_note": "Anxiety, stress and adjustment support for adults. Evening hours."
+  },
+  {
+    "clinic_id": "C002",
+    "name": "Bamboo Grove Wellness",
+    "languages": [
+      "Mandarin",
+      "Cantonese",
+      "English"
+    ],
+    "insurances": [
+      "UnitedHealthcare",
+      "Aetna"
+    ],
+    "mode": [
+      "online"
+    ],
+    "city": "New York",
+    "open_slots": [
+      "Fri Oct 30 10:00 AM",
+      "Sun Nov 1 11:00 AM",
+      "Wed Nov 4 8:00 PM"
+    ],
+    "service_note": "Online-only. Adult individual counseling, first consultations available."
+  },
+  {
+    "clinic_id": "C003",
+    "name": "Riverside Mind Clinic",
+    "languages": [
+      "English",
+      "Spanish"
+    ],
+    "insurances": [
+      "Aetna",
+      "Medicaid",
+      "Self-pay"
+    ],
+    "mode": [
+      "in_person"
+    ],
+    "city": "New York",
+    "open_slots": [
+      "Sat Oct 31 9:00 AM",
+      "Tue Nov 3 2:00 PM"
+    ],
+    "service_note": "In-person adult therapy and initial assessments."
+  },
+  {
+    "clinic_id": "C004",
+    "name": "Northstar Therapy Collective",
+    "languages": [
+      "English"
+    ],
+    "insurances": [
+      "Cigna",
+      "UnitedHealthcare",
+      "Self-pay"
+    ],
+    "mode": [
+      "online",
+      "in_person"
+    ],
+    "city": "New York",
+    "open_slots": [
+      "Fri Oct 30 5:00 PM",
+      "Thu Nov 5 7:00 PM"
+    ],
+    "service_note": "Weekday evening sessions for working adults."
+  },
+  {
+    "clinic_id": "C005",
+    "name": "Casa Serena Counseling",
+    "languages": [
+      "Spanish",
+      "English"
+    ],
+    "insurances": [
+      "Medicaid",
+      "UnitedHealthcare"
+    ],
+    "mode": [
+      "online"
+    ],
+    "city": "New York",
+    "open_slots": [
+      "Sun Nov 1 1:00 PM",
+      "Wed Nov 4 6:00 PM"
+    ],
+    "service_note": "Online counseling for adults and couples."
+  },
+  {
+    "clinic_id": "C006",
+    "name": "Lumen Hall Practice",
+    "languages": [
+      "Korean"
+    ],
+    "insurances": [
+      "Oscar"
+    ],
+    "mode": [
+      "in_person"
+    ],
+    "city": "New York",
+    "open_slots": [
+      "Tue Nov 10 10:00 AM"
+    ],
+    "service_note": "Test clinic: deliberately matches almost nothing, used to check that the agent says when there is no match."
+  }
+]

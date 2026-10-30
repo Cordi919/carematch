@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CareMatch Live</title>
+<style>
+  :root {
+    --bg: #0f1418; --panel: #172027; --panel2: #1c2731; --line: #25313a; --text: #e9eef2; --muted: #8a9aa6;
+    --search: #5aa9e6; --ok: #4cc38a; --warn: #f0b429; --bad: #ef6f6c;
+    --system: #8a9aa6; --money: #c9a7f5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 18px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 24px 48px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 30px; letter-spacing: -0.01em; }
+  h1 span { color: var(--muted); font-weight: 400; }
+  h2 { margin: 0; font-size: 22px; }
+  .live { color: var(--muted); font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+  .dot.off { background: var(--bad); }
+
+  /* clinic check board: the main visual of the demo */
+  .board { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; margin: 20px 0 18px; overflow: hidden; }
+  .board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;
+                padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .req { color: var(--muted); font-size: 17px; }
+  .req b { color: var(--text); }
+  .grid { display: grid; grid-template-columns: 1.1fr 1.25fr 1.6fr 1fr; }
+  .grid > div { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .grid .h { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+             padding-top: 10px; padding-bottom: 10px; background: var(--panel2); }
+  .name { font-weight: 650; font-size: 20px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 18px; }
+  .f { white-space: nowrap; }
+  .f.y::after { content: " ✓"; color: var(--ok); font-weight: 700; }
+  .f.n { color: var(--bad); }
+  .f.n::after { content: " ✗"; font-weight: 700; }
+  .f.u { color: var(--muted); }
+  .f.u::after { content: " ?"; font-weight: 700; }
+  .f.d { color: var(--muted); }
+  .sub { color: var(--muted); font-size: 15px; margin-top: 4px; }
+  .sub b { color: var(--text); font-weight: 600; }
+  .badge { display: inline-block; font-weight: 700; font-size: 15px; padding: 4px 10px; border-radius: 999px;
+           letter-spacing: .02em; }
+  .b-to_call { background: #2a343d; color: var(--muted); }
+  .b-verified, .b-booked { background: rgba(76,195,138,.16); color: var(--ok); }
+  .b-ruled_out { background: rgba(240,180,41,.16); color: var(--warn); }
+  .b-declined_ai { background: #2a343d; color: var(--muted); text-decoration: line-through; }
+  .row-declined_ai .name { text-decoration: line-through; color: var(--muted); }
+  .row-new { animation: flash 3s ease-out; }
+  .board-empty { color: var(--muted); padding: 28px 20px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 0 0 12px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+  .tile b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile small { color: var(--muted); font-size: 13px; display: block; }
+  .t-search b { color: var(--search); } .t-booking b { color: var(--ok); }
+  .t-transfer b { color: var(--bad); } .t-money b { color: var(--money); }
+  .billing { color: var(--muted); font-size: 14px; margin: 0 0 18px; min-height: 1.3em; }
+  .billing b { color: var(--text); font-weight: 600; }
+
+  ol { list-style: none; margin: 0; padding: 0; }
+  li { display: grid; grid-template-columns: 92px 120px 1fr; gap: 14px; align-items: start;
+       padding: 11px 16px; border-bottom: 1px solid var(--line); border-left: 4px solid var(--c, var(--system));
+       font-size: 16px; }
+  li .time { color: var(--muted); font-variant-numeric: tabular-nums; }
+  li .tag { color: var(--c); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
+  li.new { animation: flash 3s ease-out; }
+  @keyframes flash { 0% { background: rgba(255,255,255,.14); } 100% { background: transparent; } }
+  .empty { color: var(--muted); padding: 30px 16px; text-align: center; display: block !important; border: 0 !important; }
+  .search { --c: var(--search); } .booking, .verified, .email { --c: var(--ok); }
+  .booking_refused, .ruled_out, .email_failed { --c: var(--warn); } .transfer { --c: var(--bad); }
+  .call, .results, .report { --c: var(--money); } .auth, .system { --c: var(--system); }
+  .note { color: var(--muted); font-size: 14px; margin-top: 18px; }
+  @media (max-width: 900px) {
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+    .grid .h { display: none; }
+    .grid > div { border-bottom: 0; padding-bottom: 4px; }
+    .grid > div.last { border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+  }
+  @media (max-width: 640px) { .tiles { grid-template-columns: 1fr; } li { grid-template-columns: 1fr; gap: 4px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>CareMatch <span>· we call the clinics for you</span></h1>
+    <div class="live"><i class="dot" id="dot"></i><span id="status">connecting…</span></div>
+  </header>
+
+  <section class="board">
+    <div class="board-head"><h2>Clinic check</h2><div class="req" id="req">No request yet</div></div>
+    <div id="board"><div class="board-empty">Waiting for a patient to call…</div></div>
+  </section>
+
+  <div class="tiles">
+    <div class="tile t-search"><b id="n-search">0</b><small>patient requests</small></div>
+    <div class="tile t-booking"><b id="n-booking">0</b><small>bookings written</small></div>
+    <div class="tile"><b id="t-last">–</b><small>first call → booked (last)</small><small id="t-avg">&nbsp;</small></div>
+    <div class="tile t-money"><b id="m-total">$0</b><small id="m-fee">billed per booking</small></div>
+    <div class="tile t-transfer"><b id="n-transfer">0</b><small>crisis: human callbacks</small></div>
+  </div>
+  <p class="billing" id="billing"></p>
+
+  <ol id="list"><li class="empty">Waiting for the first call…</li></ol>
+  <p class="note">Every "Phone says" fact comes from a real call to the clinic's front desk. Only one-line
+    summaries are recorded; no conversation text is stored. Clinics pay only for confirmed bookings.</p>
+</div>
+
+<script>
+  const LABELS = { search: "Request", verified: "Verified", ruled_out: "Ruled out", report: "Clinic call",
+                   results: "Callback", booking: "Booked", booking_refused: "Refused", email: "Email",
+                   email_failed: "Email", transfer: "Crisis", call: "Call", auth: "Blocked", system: "System" };
+  const STATUS = { to_call: "To call", verified: "Verified", ruled_out: "Ruled out",
+                   declined_ai: "Declined AI calls", booked: "Booked" };
+  let seen = new Set(), seenRows = new Map(), first = true;
+
+  const key = e => e.time + "|" + e.type + "|" + e.detail;
+  const esc = s => { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; };
+  const dur = s => { if (s == null) return "–"; s = Math.round(s);
+                     return s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s` : `${s}s`; };
+  const money = n => "$" + (Math.round(n * 100) / 100).toLocaleString();
+  const set = (id, v) => { document.getElementById(id).textContent = v; };
+  const cls = v => v === "yes" ? "y" : v === "no" ? "n" : v === "unknown" ? "u" : "d";
+
+  function renderBoard(b) {
+    const req = b.request, el = document.getElementById("board");
+    if (!req) {
+      set("req", "No request yet");
+      el.innerHTML = '<div class="board-empty">Waiting for a patient to call…</div>';
+      seenRows = new Map();
+      return;
+    }
+    const lang = req.language || "language", ins = req.insurance || "insurance";
+    document.getElementById("req").innerHTML = "Patient wants: " + [req.language, req.insurance,
+      (req.mode || "").replace("_", " "), req.time_pref].filter(Boolean).map(x => `<b>${esc(x)}</b>`).join(" · ");
+    if (!b.clinics.length) {
+      el.innerHTML = '<div class="board-empty">No clinic in the directory matches this request.</div>';
+      return;
+    }
+    let html = '<div class="grid"><div class="h">Clinic</div><div class="h">Directory says</div>' +
+               '<div class="h">Phone says</div><div class="h">Status</div>';
+    b.clinics.forEach(c => {
+      const d = c.directory, p = c.phone, changed = !first && seenRows.get(c.clinic_id) !== c.status;
+      const rc = `row-${esc(c.status)}${changed ? " row-new" : ""}`;
+      const dir = '<div class="facts">' + [
+        d.languages.includes(lang) ? `<span class="f y">${esc(lang)}</span>` : `<span class="f d">${esc(d.languages.join(", "))}</span>`,
+        d.insurances.includes(ins) ? `<span class="f y">${esc(ins)}</span>` : `<span class="f d">${esc(d.insurances.join(", "))}</span>`,
+        `<span class="f d">${esc(d.mode.join(" / "))}</span>`,
+      ].join("") + "</div>";
+      let phone;
+      if (c.status === "to_call") {
+        phone = '<span class="f d">Not called yet</span>';
+      } else {
+        phone = `<div class="facts"><span class="f ${cls(p.accepting_new)}">Accepting new</span>` +
+                `<span class="f ${cls(p.takes_insurance)}">${esc(ins)}</span>` +
+                `<span class="f ${cls(p.speaks_language)}">${esc(lang)}</span></div>`;
+        const extra = [];
+        if (c.therapist) extra.push(`<b>${esc(c.therapist)}</b>`);
+        if (c.slot && (p.hold === "yes")) extra.push(`<b>${esc(c.slot)}</b> held 24h`);
+        if (c.recording) extra.push("call recorded");
+        if (extra.length) phone += `<div class="sub">${extra.join(" · ")}</div>`;
+      }
+      let status = `<span class="badge b-${esc(c.status)}">${esc(STATUS[c.status] || c.status)}</span>`;
+      if ((c.status === "verified" || c.status === "booked") && c.verified_at)
+        status += `<div class="sub">by phone at ${esc(c.verified_at)}</div>`;
+      if (c.status === "ruled_out" && c.reason) status += `<div class="sub">${esc(c.reason)}</div>`;
+      html += `<div class="${rc}"><div class="name">${esc(c.name)}</div></div>` +
+              `<div class="${rc}">${dir}</div><div class="${rc}">${phone}</div><div class="${rc} last">${status}</div>`;
+    });
+    el.innerHTML = html + "</div>";
+    seenRows = new Map(b.clinics.map(c => [c.clinic_id, c.status]));
+  }
+
+  function renderEvents(events) {
+    const list = document.getElementById("list");
+    if (!events.length) {
+      list.innerHTML = '<li class="empty">Waiting for the first call…</li>';
+      seen = new Set();
+    } else {
+      list.innerHTML = events.map(e => {
+        const isNew = !first && !seen.has(key(e));
+        return `<li class="${esc(e.type)}${isNew ? " new" : ""}">
+          <span class="time">${esc(e.time)}</span>
+          <span class="tag">${esc(LABELS[e.type] || e.type)}</span>
+          <span>${esc(e.detail)}</span></li>`;
+      }).join("");
+      seen = new Set(events.map(key));
+    }
+    set("n-search", events.filter(e => e.type === "search" && e.detail.startsWith("New request")).length);
+    set("n-transfer", events.filter(e => e.type === "transfer").length);
+  }
+
+  function renderStats(s) {
+    set("n-booking", s.bookings);
+    set("t-last", dur(s.last_seconds_to_book));
+    set("t-avg", s.avg_seconds_to_book == null ? " " : `avg ${dur(s.avg_seconds_to_book)}`);
+    set("m-total", money(s.billed_total));
+    set("m-fee", `billed · ${money(s.fee_per_booking)} per booking`);
+    document.getElementById("billing").innerHTML = s.per_clinic.length
+      ? "Billing: " + s.per_clinic.map(r =>
+          `<b>${esc(r.clinic)}</b> ${r.bookings} × ${money(s.fee_per_booking)} = ${money(r.billed)}`).join(" · ")
+      : "";
+  }
+
+  async function poll() {
+    try {
+      const get = u => fetch(u, { cache: "no-store" }).then(r => r.json());
+      const [ev, st, bd] = await Promise.all([get("/events"), get("/stats"), get("/board")]);
+      document.getElementById("dot").className = "dot";
+      set("status", "live · updates every 2s");
+      renderBoard(bd);
+      renderEvents(ev);
+      renderStats(st);
+      first = false;
+    } catch (err) {
+      document.getElementById("dot").className = "dot off";
+      set("status", "backend not reachable");
+    }
+  }
+  poll();
+  setInterval(poll, 2000);
+</script>
+</body>
+</html>
