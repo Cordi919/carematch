@@ -22,7 +22,7 @@ Most voice AI in healthcare answers the phone *for the clinic*. **CareMatch make
 
 The dashboard shows each clinic's directory listing next to what its front desk actually said, live during the calls.
 
-Bolna agent configurations (prompts, tools, variables) are in [`bolna_agents/`](bolna_agents/).
+Each agent's welcome message, prompt, variables and tools are documented in [`bolna_agents/`](bolna_agents/README.md).
 
 ## Safety design
 
