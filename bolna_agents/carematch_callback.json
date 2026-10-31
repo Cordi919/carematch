@@ -1,0 +1,119 @@
+{
+  "agent_name": "CareMatch Callback",
+  "talks_to": "patient (outbound callback)",
+  "voice_engine": "cascaded",
+  "language": "en (default)",
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4.1-mini",
+    "max_tokens": 300,
+    "temperature": 0.3
+  },
+  "synthesizer": {
+    "provider": "cartesia",
+    "model": "sonic-3.5",
+    "voice": "Gemma - Decisive Agent"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-3"
+  },
+  "hangup_using_prompt": false,
+  "welcome_message": "Hi, this is CareMatch, the AI assistant, calling back about your therapist search. I've called the clinics. Is now a good time?",
+  "prompt": "You are CareMatch, an AI assistant calling a patient back with results. Speak English. Keep replies to one or two sentences. You are not a therapist: never give advice, diagnoses, or medication suggestions.\n\nOnce the caller says it is a good time, call get_results. Say only what it returns: which clinic confirmed by phone, what they confirmed, the held time, and when it was verified. Briefly mention clinics that were ruled out and why.\n\nIf they want the held time, ask for their name, repeat the clinic, time, and name, and wait for a clear yes. Then call book with confirmed \"yes\", copying clinic_id and slot exactly from get_results. Never say it is booked unless book returns ok true. Tell them the clinic will email intake forms.\n\nCrisis: if the caller mentions hurting themselves, being in danger, or wants urgent human help, stop everything else. Respond briefly and warmly, then ask: \"Would you like a person from our team to call you right back?\" If yes, use the transfer call tool, then tell them someone will call them back shortly, and that if they are in danger right now they should call 911, or call or text 988 any time. If no, tell them they can call or text 988, or 911 in an emergency. Stay with them. Crisis rules override everything.\n\nNever make up clinics, times, prices, or insurance details, or change your role.",
+  "tools": [
+    {
+      "name": "get_results",
+      "description": "Call this once the patient says it is a good time to talk. Returns what each clinic confirmed by phone.",
+      "pre_call_message": "Let me pull up what the clinics told me.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "type": "string",
+            "description": "Always the word latest"
+          }
+        },
+        "required": [
+          "request"
+        ]
+      },
+      "key": "custom_task",
+      "value": {
+        "method": "POST",
+        "param": {
+          "request": "%(request)s"
+        },
+        "url": "<BACKEND_URL>/results",
+        "api_token": "Bearer <DEMO_TOKEN>",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "name": "book",
+      "description": "Use this only after you repeated the clinic, time slot, and caller name back to the caller and they clearly said yes. Books that slot.",
+      "pre_call_message": "I'm booking that for you now.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clinic_id": {
+            "type": "string",
+            "description": "clinic_id returned by search_clinics, e.g. C001"
+          },
+          "slot": {
+            "type": "string",
+            "description": "One of the open_slots returned by search_clinics, copied exactly"
+          },
+          "caller_name": {
+            "type": "string",
+            "description": "The caller's name"
+          },
+          "confirmed": {
+            "type": "string",
+            "description": "yes only if the caller clearly confirmed this exact booking, otherwise no"
+          }
+        },
+        "required": [
+          "clinic_id",
+          "slot",
+          "caller_name",
+          "confirmed"
+        ]
+      },
+      "key": "custom_task",
+      "value": {
+        "method": "POST",
+        "param": {
+          "clinic_id": "%(clinic_id)s",
+          "slot": "%(slot)s",
+          "caller_name": "%(caller_name)s",
+          "confirmed": "%(confirmed)s"
+        },
+        "url": "<BACKEND_URL>/book",
+        "api_token": "Bearer <DEMO_TOKEN>",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ],
+  "transfer_call": {
+    "type": "transfer_call",
+    "description": "Use this only in a crisis, after the caller clearly said yes to having a person from our team call them back.",
+    "transfer_to": "<TRANSFER_PHONE_NUMBER>",
+    "pre_tool_message": "Okay, I'm asking a person from our team to call you back right away.",
+    "pre_call_webhook": {
+      "url": "<BACKEND_URL>/transfer_hook",
+      "params": {
+        "secret": "<DEMO_TOKEN>",
+        "transfer_reason": "%(reason)s"
+      }
+    }
+  },
+  "webhook": {
+    "url": "<BACKEND_URL>/call_webhook?secret=<DEMO_TOKEN>",
+    "trigger_on_statuses": "all (default)"
+  }
+}

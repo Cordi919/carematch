@@ -1,0 +1,117 @@
+{
+  "agent_name": "CareMatch Caller",
+  "talks_to": "clinic front desk (outbound, one call per clinic)",
+  "voice_engine": "cascaded",
+  "language": "en (default)",
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4.1-mini",
+    "max_tokens": 300,
+    "temperature": 0.3
+  },
+  "synthesizer": {
+    "provider": "cartesia",
+    "model": "sonic-3.5",
+    "voice": "Gemma - Decisive Agent"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-3"
+  },
+  "hangup_using_prompt": false,
+  "welcome_message": "Hi, is this {{clinic_name}}? This is CareMatch, an automated assistant calling on behalf of a patient who's looking for a therapist. This call is recorded. Do you have 30 seconds for a few quick questions?",
+  "prompt": "You are CareMatch, an automated assistant calling {{clinic_name}} (clinic_id {{clinic_id}}) on behalf of a patient. You are speaking with the clinic's front desk. Always be honest that you are automated; never pretend to be human. Be brief and polite; the call should take under a minute.\n\nThe patient wants a therapist who speaks {{language}}, {{mode}} sessions, takes {{insurance}}, at {{time_pref}}.\n\nAsk these one at a time, and stop as soon as an answer rules the clinic out: Are you accepting new clients? Do you take {{insurance}}? Do you have a therapist who speaks {{language}}? What is the earliest opening around {{time_pref}}? Make sure you get the date, not just the weekday. If they offer a time, ask: \"Could you hold that for 24 hours while the patient completes your intake?\"\n\nNever share the patient's name, contact details, or any health information. If asked, say the patient will contact the clinic directly.\n\nIf they do not want calls from an automated assistant, apologize, say you won't call again, and record declined_ai yes.\n\nBefore ending, call report_clinic once with exactly what they said; write the slot like Thu Nov 5 6:00 PM, and use unknown for anything not answered. Then thank them and end the call.",
+  "prompt_variables": {
+    "_set_per_call": "In Agent Studio: Agent tab > Variables. Change clinic_name and clinic_id before each clinic call.",
+    "test_timezone": "America/Los_Angeles",
+    "clinic_name": "Harbor Light Counseling",
+    "clinic_id": "C001",
+    "language": "Mandarin",
+    "mode": "online",
+    "insurance": "Aetna",
+    "time_pref": "weekday evenings"
+  },
+  "tools": [
+    {
+      "name": "report_clinic",
+      "description": "Call this once near the end of the call to record exactly what the front desk said. Use unknown for anything they did not answer.",
+      "pre_call_message": "Thank you, let me note that down.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clinic_id": {
+            "type": "string",
+            "description": "The clinic_id given in your instructions, e.g. C001"
+          },
+          "accepting_new": {
+            "type": "string",
+            "description": "yes, no, or unknown: is the clinic accepting new clients"
+          },
+          "takes_insurance": {
+            "type": "string",
+            "description": "yes, no, or unknown: does the clinic take the patient insurance"
+          },
+          "speaks_language": {
+            "type": "string",
+            "description": "yes, no, or unknown: does a therapist there speak the patient language"
+          },
+          "therapist": {
+            "type": "string",
+            "description": "Name of the therapist who speaks the language, or unknown"
+          },
+          "slot": {
+            "type": "string",
+            "description": "Earliest opening the front desk offered, written like Thu Nov 5 6:00 PM, or none"
+          },
+          "hold": {
+            "type": "string",
+            "description": "yes if the front desk agreed to hold that time for 24 hours, otherwise no"
+          },
+          "declined_ai": {
+            "type": "string",
+            "description": "yes if the clinic does not want calls from an automated assistant, otherwise no"
+          },
+          "note": {
+            "type": "string",
+            "description": "One short sentence with anything else important they said, e.g. stopped taking Aetna last year, or none"
+          }
+        },
+        "required": [
+          "clinic_id",
+          "accepting_new",
+          "takes_insurance",
+          "speaks_language",
+          "therapist",
+          "slot",
+          "hold",
+          "declined_ai",
+          "note"
+        ]
+      },
+      "key": "custom_task",
+      "value": {
+        "method": "POST",
+        "param": {
+          "clinic_id": "%(clinic_id)s",
+          "accepting_new": "%(accepting_new)s",
+          "takes_insurance": "%(takes_insurance)s",
+          "speaks_language": "%(speaks_language)s",
+          "therapist": "%(therapist)s",
+          "slot": "%(slot)s",
+          "hold": "%(hold)s",
+          "declined_ai": "%(declined_ai)s",
+          "note": "%(note)s"
+        },
+        "url": "<BACKEND_URL>/report_clinic",
+        "api_token": "Bearer <DEMO_TOKEN>",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ],
+  "webhook": {
+    "url": "<BACKEND_URL>/call_webhook?secret=<DEMO_TOKEN>",
+    "trigger_on_statuses": "all (default)"
+  }
+}

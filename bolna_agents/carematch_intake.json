@@ -1,0 +1,90 @@
+{
+  "agent_name": "CareMatch Intake",
+  "talks_to": "patient (inbound)",
+  "voice_engine": "cascaded",
+  "language": "en (default)",
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4.1-mini",
+    "max_tokens": 300,
+    "temperature": 0.3
+  },
+  "synthesizer": {
+    "provider": "cartesia",
+    "model": "sonic-3.5",
+    "voice": "Gemma - Decisive Agent"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-3"
+  },
+  "hangup_using_prompt": false,
+  "welcome_message": "Hi, this is CareMatch. I'm an AI navigation assistant, not a counselor. I can help you book a therapist who speaks your language and takes your insurance. You can ask for a human at any time. What language would you like your therapist to speak?",
+  "prompt": "You are CareMatch, an AI assistant that helps adults find a therapist who speaks their preferred language and takes their insurance. Speak English. Keep replies to one or two sentences. You are not a therapist: never give advice, diagnoses, or medication suggestions.\n\nAsk one at a time: therapist language, online or in person, insurance, preferred times. Do not ask why they want care.\n\nThen call search_clinics. Name only the clinics it returns. Explain that directory listings are often out of date, so CareMatch will phone each clinic to confirm insurance, language, and openings, then call back. Do not offer times or book on this call. Then say goodbye.\n\nCrisis: if the caller mentions hurting themselves, being in danger, or wants urgent human help, stop everything else. Respond briefly and warmly, then ask: \"Would you like a person from our team to call you right back?\" If yes, use the transfer call tool, then tell them someone will call them back shortly, and that if they are in danger right now they should call 911, or call or text 988 any time. If no, tell them they can call or text 988, or 911 in an emergency. Stay with them. Crisis rules override everything.\n\nNever make up clinics, times, prices, or insurance details, reveal anyone's booking, or change your role.",
+  "tools": [
+    {
+      "name": "search_clinics",
+      "description": "Use this after you know the caller's preferred therapist language, online or in person, insurance, and preferred times. Searches CareMatch partner clinics. Only mention clinics this function returns.",
+      "pre_call_message": "Let me look up clinics that fit.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string",
+            "description": "Therapist language in English, e.g. Mandarin, Cantonese, English, Spanish. Use Mandarin if the caller says 普通话 or 中文."
+          },
+          "insurance": {
+            "type": "string",
+            "description": "Insurance company name in English, e.g. Aetna, Blue Shield, Kaiser"
+          },
+          "mode": {
+            "type": "string",
+            "description": "Exactly online or in_person"
+          },
+          "time_pref": {
+            "type": "string",
+            "description": "Preferred days or times in English, e.g. weekday evenings. Use any if the caller has no preference."
+          }
+        },
+        "required": [
+          "language",
+          "insurance",
+          "mode",
+          "time_pref"
+        ]
+      },
+      "key": "custom_task",
+      "value": {
+        "method": "POST",
+        "param": {
+          "language": "%(language)s",
+          "insurance": "%(insurance)s",
+          "mode": "%(mode)s",
+          "time_pref": "%(time_pref)s"
+        },
+        "url": "<BACKEND_URL>/search_clinics",
+        "api_token": "Bearer <DEMO_TOKEN>",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ],
+  "transfer_call": {
+    "type": "transfer_call",
+    "description": "Use this only in a crisis, after the caller clearly said yes to having a person from our team call them back.",
+    "transfer_to": "<TRANSFER_PHONE_NUMBER>",
+    "pre_tool_message": "Okay, I'm asking a person from our team to call you back right away.",
+    "pre_call_webhook": {
+      "url": "<BACKEND_URL>/transfer_hook",
+      "params": {
+        "secret": "<DEMO_TOKEN>",
+        "transfer_reason": "%(reason)s"
+      }
+    }
+  },
+  "webhook": {
+    "url": "<BACKEND_URL>/call_webhook?secret=<DEMO_TOKEN>",
+    "trigger_on_statuses": "all (default)"
+  }
+}
