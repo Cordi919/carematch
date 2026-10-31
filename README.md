@@ -33,7 +33,7 @@ Bolna agent configurations: see [`bolna_agents/`](bolna_agents/README.md).
 3. A clinic that doesn't want automated calls goes on a do-not-call list that the backend enforces.
 4. Clinics only hold a slot for 24 hours; the patient registers themselves.
 5. Nothing is booked without the patient's explicit yes.
-6. If the patient mentions self-harm, everything stops: the agent offers 911, 988 and a human callback. Crisis support never depends on any business relationship.
+6. If the patient mentions self-harm, everything stops: the agent offers 911 and 988, asks for consent, and on a yes transfers the live call to a human. Crisis support never depends on any business relationship.
 7. No transcripts are stored; the dashboard keeps one-line summaries only.
 
 ## Business model
@@ -60,6 +60,7 @@ This is the backend the three Bolna agents share. **All clinics, names and time 
 
 ```bash
 cd carematch
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 pytest -q                                   # all tests should pass
@@ -105,7 +106,7 @@ All strings. Yes/no answers accept yes/no/true/false (any case); anything else c
 |---|---|
 | `clinic_id` | e.g. `C002` (pass it to the Caller agent as a call variable) |
 | `accepting_new`, `takes_insurance`, `speaks_language`, `hold` | yes / no / unknown |
-| `therapist` | name the front desk gave, e.g. `Dr. Chen` |
+| `therapist` | name the front desk gave, e.g. `Dr. Elena García` |
 | `slot` | the held time. Best as `Thu Nov 5 6:00 PM` (so the calendar invite works); `Thursday 6pm` also works |
 | `declined_ai` | yes if the clinic doesn't want automated calls → do-not-call list |
 | `note` | short reason in the clinic's words, e.g. `stopped taking Aetna last year` |
@@ -138,7 +139,7 @@ curl -s -X POST $U/reset -H "$A"
 
 # 1. Patient calls in
 curl -s -X POST $U/search_clinics -H "$A" -H "$J" \
-  -d '{"language":"Mandarin","insurance":"Aetna","mode":"online","time_pref":"weekday evenings"}'
+  -d '{"language":"Spanish","insurance":"Aetna","mode":"online","time_pref":"weekday evenings"}'
 
 # 2a. Harbor Light: "We stopped taking Aetna last year"
 curl -s -X POST $U/report_clinic -H "$A" -H "$J" -d '{"clinic_id":"C001","accepting_new":"yes",
@@ -147,7 +148,7 @@ curl -s -X POST $U/report_clinic -H "$A" -H "$J" -d '{"clinic_id":"C001","accept
 
 # 2b. Bamboo Grove confirms everything and holds Thursday 6 PM
 curl -s -X POST $U/report_clinic -H "$A" -H "$J" -d '{"clinic_id":"C002","accepting_new":"yes",
-  "takes_insurance":"yes","speaks_language":"yes","therapist":"Dr. Chen","slot":"Thu Nov 5 6:00 PM",
+  "takes_insurance":"yes","speaks_language":"yes","therapist":"Dr. Elena García","slot":"Thu Nov 5 6:00 PM",
   "hold":"yes","declined_ai":"no","note":""}'
 
 # (a clinic that refuses AI calls)
@@ -156,7 +157,7 @@ curl -s -X POST $U/report_clinic -H "$A" -H "$J" -d '{"clinic_id":"C002","accept
 # 3. Callback: what was confirmed, then book the held slot
 curl -s -X POST $U/results -H "$A" -H "$J" -d '{}'
 curl -s -X POST $U/book -H "$A" -H "$J" \
-  -d '{"clinic_id":"C002","slot":"Thu Nov 5 6:00 PM","caller_name":"Sinclair","confirmed":"yes"}'
+  -d '{"clinic_id":"C002","slot":"Thu Nov 5 6:00 PM","caller_name":"Lucía Hernández","confirmed":"yes"}'
 
 # Webhook a clinic call's recording (what Bolna sends when a call completes)
 curl -s -X POST "$U/call_webhook?secret=$DEMO_TOKEN" -H "$J" \
@@ -172,4 +173,4 @@ curl -s $U/stats
 
 ## Fake clinics
 
-Six clinics in `clinics.json`, all in New York. C001 Harbor Light and C002 Bamboo Grove are the two Mandarin + Aetna + online matches used in the demo. C006 (Korean, Oscar, in person) is deliberately hard to match. Names in `clinics.json` must match the canonical names in `normalize.py` (a test checks this).
+Six clinics in `clinics.json`, all in New York. C001 Harbor Light and C002 Bamboo Grove are the two Spanish (also Mandarin) + Aetna + online matches used in the demo. C006 (Korean, Oscar, in person) is deliberately hard to match. Names in `clinics.json` must match the canonical names in `normalize.py` (a test checks this).
