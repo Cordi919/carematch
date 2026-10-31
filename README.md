@@ -6,6 +6,8 @@ Built for the Bolna Buildathon (Symphony 2026) on Bolna voice agents.
 
 ![Clinic check: directory listing vs what the front desk said on the phone](docs/dashboard.png)
 
+*Dashboard from a scripted demo run of the backend (Spanish scenario). Clinics are fictional and timings are illustrative.*
+
 ## The problem
 
 Finding a therapist who takes your insurance means calling down a list, and the list is usually wrong. In an October 2026 JAMA Health Forum study, researchers posing as patients made over 5,800 calls to mental health clinicians listed in insurer directories: fewer than a quarter ended in an appointment, and about 60% went unanswered. A 2023 US Senate Finance Committee secret-shopper study got appointments 18% of the time. Clinics have no API; the front-desk phone is the only source of truth.
@@ -22,7 +24,7 @@ Most voice AI in healthcare answers the phone *for the clinic*. **CareMatch make
 
 The dashboard shows each clinic's directory listing next to what its front desk actually said, live during the calls.
 
-Each agent's welcome message, prompt, variables and tools are documented in [`bolna_agents/`](bolna_agents/README.md).
+Bolna agent configurations: see [`bolna_agents/`](bolna_agents/README.md).
 
 ## Safety design
 
