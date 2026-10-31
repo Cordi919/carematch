@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 os.environ["DEMO_TOKEN"] = "test-token"
-os.environ.setdefault("FEE_PER_BOOKING", "25")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
@@ -114,19 +113,26 @@ def test_booking_rules():
     assert not book(slot="fri oct 30, 6:00 pm")["ok"]  # same slot again
 
 
-def test_booking_records_time_and_fee():
+def test_booking_records_time():
     search(call_id="CA1")
     assert book(call_id="CA1")["ok"]
     s = client.get("/stats").json()
     assert s["bookings"] == 1
     assert s["last_seconds_to_book"] is not None and s["last_seconds_to_book"] >= 0
-    assert s["billed_total"] == 25
-    assert s["per_clinic"][0]["clinic"] == "Harbor Light Counseling"
 
 
-def test_refused_booking_is_not_billed():
+def test_refused_booking_is_not_counted():
     book(confirmed="no")
-    assert client.get("/stats").json()["billed_total"] == 0
+    assert client.get("/stats").json()["bookings"] == 0
+
+
+def test_no_billing_anywhere():
+    """Charging clinics per referred patient was dropped on purpose (anti-kickback rules)."""
+    search()
+    book()
+    s = client.get("/stats").json()
+    assert not any(k in s for k in ("billed_total", "fee_per_booking", "per_clinic"))
+    assert not any("$" in e["detail"] or "bill" in e["detail"].lower() for e in client.get("/events").json())
 
 
 def test_call_status_start_is_used_for_timer(monkeypatch):
@@ -173,10 +179,10 @@ def test_transfer_hook_bad_secret():
 
 # ---------- reset ----------
 
-def test_reset_restores_slots_and_billing():
+def test_reset_restores_slots_and_bookings():
     book()
     client.post("/reset", headers=AUTH)
-    assert client.get("/stats").json()["billed_total"] == 0
+    assert client.get("/stats").json()["bookings"] == 0
     assert book()["ok"]  # slot is free again
 
 
@@ -261,7 +267,7 @@ def test_book_held_slot_after_verification():
     r = book(clinic_id="C002", slot="thu nov 5 6:00 pm")
     assert r["ok"] and "verified by phone" in r["message"] and "intake forms" in r["message"]
     assert board_rows()["C002"]["status"] == "booked"
-    assert client.get("/stats").json()["billed_total"] == 25
+    assert client.get("/stats").json()["bookings"] == 1
     assert not book(clinic_id="C002", slot="Thu Nov 5 6:00 PM")["ok"]  # no double booking
 
 

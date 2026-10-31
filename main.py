@@ -45,7 +45,6 @@ import notify
 
 BASE = Path(__file__).parent
 DEMO_TOKEN = os.environ.get("DEMO_TOKEN", "")
-FEE_PER_BOOKING = float(os.environ.get("FEE_PER_BOOKING", "25"))  # USD per confirmed booking
 CALL_START_MAX_AGE = 30 * 60  # seconds; an unclaimed call start older than this is ignored
 
 with open(BASE / "clinics.json", encoding="utf-8") as f:
@@ -431,7 +430,7 @@ async def book(request: Request):
             "therapist": row["therapist"] if held else "",
             "verified_at": clock(row["verified_at"]) if held else "",
             "recording_url": STATE["recordings"].get(clinic_id, ""),
-            "seconds_to_book": round(elapsed, 1), "fee": FEE_PER_BOOKING,
+            "seconds_to_book": round(elapsed, 1),
         }
         STATE["bookings"][booking_id] = booking
         if row:
@@ -439,7 +438,7 @@ async def book(request: Request):
 
     via = f", verified by phone at {booking['verified_at']}" if held else ""
     log_event("booking", (f"Booking {booking_id} written: {clinic['name']}, {exact}{via} · "
-                          f"{fmt_duration(elapsed)} from first call · ${FEE_PER_BOOKING:g} billed to clinic"))
+                          f"{fmt_duration(elapsed)} from first call"))
     threading.Thread(target=send_confirmation, args=(dict(booking),), daemon=True).start()
 
     if held:
@@ -518,18 +517,10 @@ async def stats(request: Request):
     with LOCK:
         bookings = list(STATE["bookings"].values())
     times = [b["seconds_to_book"] for b in bookings]
-    per_clinic = {}
-    for b in bookings:
-        row = per_clinic.setdefault(b["clinic_name"], {"clinic": b["clinic_name"], "bookings": 0, "billed": 0.0})
-        row["bookings"] += 1
-        row["billed"] += b["fee"]
     return JSONResponse({
         "bookings": len(bookings),
         "last_seconds_to_book": times[-1] if times else None,
         "avg_seconds_to_book": round(sum(times) / len(times), 1) if times else None,
-        "fee_per_booking": FEE_PER_BOOKING,
-        "billed_total": sum(b["fee"] for b in bookings),
-        "per_clinic": sorted(per_clinic.values(), key=lambda r: -r["billed"]),
     })
 
 

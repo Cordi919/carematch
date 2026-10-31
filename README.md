@@ -1,8 +1,52 @@
-# CareMatch backend (v2)
+# CareMatch
 
-CareMatch: a voice agent that phones therapy clinics for you to verify insurance, language, and openings, then calls you back to book. Every fact comes from a real call.
+**A voice agent that phones therapy clinics for you to verify insurance, language, and openings, then calls you back to book. Every fact comes from a real call.**
 
-This is the backend three Bolna agents share. **All clinics, names and time slots are fake.** State lives in memory and is cleared on restart. The previous version (direct booking) is kept in `../carematch_v1/` as a fallback.
+Built for the Bolna Buildathon (Symphony 2026) on Bolna voice agents.
+
+![Clinic check: directory listing vs what the front desk said on the phone](docs/dashboard.png)
+
+## The problem
+
+Finding a therapist who takes your insurance means calling down a list, and the list is usually wrong. In an October 2026 JAMA Health Forum study, researchers posing as patients made over 5,800 calls to mental health clinicians listed in insurer directories: fewer than a quarter ended in an appointment, and about 60% went unanswered. A 2023 US Senate Finance Committee secret-shopper study got appointments 18% of the time. Clinics have no API; the front-desk phone is the only source of truth.
+
+Most voice AI in healthcare answers the phone *for the clinic*. **CareMatch makes the calls *for the patient*.**
+
+## How it works
+
+| | Agent (Bolna) | What it does | Backend |
+|---|---|---|---|
+| ① | **Intake** | Patient calls in and says what they need (language, insurance, online or in person, times). Reads back anything speech recognition may have misheard. Offers no times yet. | `/search_clinics` |
+| ② | **Caller** | Phones each listed clinic. First sentence: it is an automated assistant. Asks four questions in under a minute: accepting new patients? take this insurance? a therapist who speaks this language? can you hold a slot for 24 hours? | `/report_clinic` |
+| ③ | **Callback** | Calls the patient back with only what clinics confirmed by phone, and when. Books the held slot after the patient says yes. Sends a confirmation email with a calendar invite. | `/results`, `/book` |
+
+The dashboard shows each clinic's directory listing next to what its front desk actually said, live during the calls.
+
+Bolna agent configurations (prompts, tools, variables) are in [`bolna_agents/`](bolna_agents/).
+
+## Safety design
+
+1. The agent says it is an AI in its first sentence and never pretends to be human.
+2. Clinic calls ask four questions, take under a minute, and never share the patient's name or health information.
+3. A clinic that doesn't want automated calls goes on a do-not-call list that the backend enforces.
+4. Clinics only hold a slot for 24 hours; the patient registers themselves.
+5. Nothing is booked without the patient's explicit yes.
+6. If the patient mentions self-harm, everything stops: the agent offers 911, 988 and a human callback. Crisis support never depends on any business relationship.
+7. No transcripts are stored; the dashboard keeps one-line summaries only.
+
+## Business model
+
+Free for patients. Sold to universities and employers as a mental-health access benefit. Clinics join free. We never charge clinics per patient referred: per-referral fees are restricted in healthcare (anti-kickback and fee-splitting laws) and would bias which clinics get recommended.
+
+## Next step
+
+Call 20 real clinics with the AI disclosure and measure answer and completion rates. Longer term, clinics that join share their calendars directly, and phone calls cover the ones that haven't.
+
+---
+
+# Backend reference
+
+This is the backend the three Bolna agents share. **All clinics, names and time slots in this demo are fictional.** State lives in memory and is cleared on restart.
 
 ## Flow
 
@@ -19,7 +63,6 @@ pip install -r requirements.txt -r requirements-dev.txt
 pytest -q                                   # all tests should pass
 
 export DEMO_TOKEN=pick-your-own-secret      # never commit this
-export FEE_PER_BOOKING=25                   # optional, USD per confirmed booking
 # optional confirmation email (pick one):
 export CONFIRM_EMAIL=patient@example.com
 export RESEND_API_KEY=re_...                # Resend; or:
@@ -71,7 +114,6 @@ Result: all four yes plus a slot → **Verified**. `declined_ai` yes → **Decli
 
 - **Misheard names**: "athena" → Aetna, "UHC" → UnitedHealthcare, "Aetna Better Health" → Aetna. When it corrects something, the search message tells the agent to read it back first.
 - **Time to booking**: from the patient's first call to the booking, across all three calls.
-- **Pay per booking**: each confirmed booking bills the clinic `FEE_PER_BOOKING`; shown on the dashboard.
 - **Recordings**: when a clinic call ends, the webhook's `telephony_data.recording_url` is linked to that clinic and included in the confirmation email. The transcript is never stored.
 
 ## Bolna setup checklist

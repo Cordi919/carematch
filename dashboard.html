@@ -8,7 +8,7 @@
   :root {
     --bg: #0f1418; --panel: #172027; --panel2: #1c2731; --line: #25313a; --text: #e9eef2; --muted: #8a9aa6;
     --search: #5aa9e6; --ok: #4cc38a; --warn: #f0b429; --bad: #ef6f6c;
-    --system: #8a9aa6; --money: #c9a7f5;
+    --system: #8a9aa6; --violet: #c9a7f5;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -53,14 +53,12 @@
   .row-new { animation: flash 3s ease-out; }
   .board-empty { color: var(--muted); padding: 28px 20px; }
 
-  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 0 0 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 0 12px; }
   .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
   .tile b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .tile small { color: var(--muted); font-size: 13px; display: block; }
   .t-search b { color: var(--search); } .t-booking b { color: var(--ok); }
-  .t-transfer b { color: var(--bad); } .t-money b { color: var(--money); }
-  .billing { color: var(--muted); font-size: 14px; margin: 0 0 18px; min-height: 1.3em; }
-  .billing b { color: var(--text); font-weight: 600; }
+  .t-transfer b { color: var(--bad); }
 
   ol { list-style: none; margin: 0; padding: 0; }
   li { display: grid; grid-template-columns: 92px 120px 1fr; gap: 14px; align-items: start;
@@ -73,7 +71,7 @@
   .empty { color: var(--muted); padding: 30px 16px; text-align: center; display: block !important; border: 0 !important; }
   .search { --c: var(--search); } .booking, .verified, .email { --c: var(--ok); }
   .booking_refused, .ruled_out, .email_failed { --c: var(--warn); } .transfer { --c: var(--bad); }
-  .call, .results, .report { --c: var(--money); } .auth, .system { --c: var(--system); }
+  .call, .results, .report { --c: var(--violet); } .auth, .system { --c: var(--system); }
   .note { color: var(--muted); font-size: 14px; margin-top: 18px; }
   @media (max-width: 900px) {
     .tiles { grid-template-columns: repeat(2, 1fr); }
@@ -101,14 +99,12 @@
     <div class="tile t-search"><b id="n-search">0</b><small>patient requests</small></div>
     <div class="tile t-booking"><b id="n-booking">0</b><small>bookings written</small></div>
     <div class="tile"><b id="t-last">–</b><small>first call → booked (last)</small><small id="t-avg">&nbsp;</small></div>
-    <div class="tile t-money"><b id="m-total">$0</b><small id="m-fee">billed per booking</small></div>
     <div class="tile t-transfer"><b id="n-transfer">0</b><small>crisis: human callbacks</small></div>
   </div>
-  <p class="billing" id="billing"></p>
 
   <ol id="list"><li class="empty">Waiting for the first call…</li></ol>
   <p class="note">Every "Phone says" fact comes from a real call to the clinic's front desk. Only one-line
-    summaries are recorded; no conversation text is stored. Clinics pay only for confirmed bookings.</p>
+    summaries are recorded; no conversation text is stored.</p>
 </div>
 
 <script>
@@ -123,7 +119,6 @@
   const esc = s => { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; };
   const dur = s => { if (s == null) return "–"; s = Math.round(s);
                      return s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s` : `${s}s`; };
-  const money = n => "$" + (Math.round(n * 100) / 100).toLocaleString();
   const set = (id, v) => { document.getElementById(id).textContent = v; };
   const cls = v => v === "yes" ? "y" : v === "no" ? "n" : v === "unknown" ? "u" : "d";
 
@@ -199,12 +194,6 @@
     set("n-booking", s.bookings);
     set("t-last", dur(s.last_seconds_to_book));
     set("t-avg", s.avg_seconds_to_book == null ? " " : `avg ${dur(s.avg_seconds_to_book)}`);
-    set("m-total", money(s.billed_total));
-    set("m-fee", `billed · ${money(s.fee_per_booking)} per booking`);
-    document.getElementById("billing").innerHTML = s.per_clinic.length
-      ? "Billing: " + s.per_clinic.map(r =>
-          `<b>${esc(r.clinic)}</b> ${r.bookings} × ${money(s.fee_per_booking)} = ${money(r.billed)}`).join(" · ")
-      : "";
   }
 
   async function poll() {
