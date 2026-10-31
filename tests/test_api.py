@@ -88,8 +88,13 @@ def test_unrecognised_insurance_asks_to_spell():
 
 
 def test_no_match_is_honest():
-    r = search(language="Spanish", insurance="Cigna")
+    r = search(language="Korean", insurance="Aetna")
     assert r["ok"] and r["matches"] == []
+
+
+def test_spanish_demo_matches_same_two_clinics():
+    r = search(language="Spanish")
+    assert [m["clinic_id"] for m in r["matches"]] == ["C001", "C002"]
 
 
 def test_missing_field_refused():
